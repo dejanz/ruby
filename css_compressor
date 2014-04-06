@@ -1,0 +1,98 @@
+class Css_compressor
+  attr_reader :from_file, :to_file
+  def initialize(from_file, to_file)
+    @from_file = from_file
+    @to_file = to_file
+  end
+  def remove_line_comments_and_empty_lines
+    f_in = File.new(@from_file, "r")
+    f_out = File.new(@to_file, "w")
+    while line = f_in.gets
+      line = line.strip
+      if line.length >= 4 && line[0, 2] == '/*' and line[line.length - 2, 2] == '*/'
+        line = ''
+      end
+      if line != ''
+        f_out.puts(line)
+      end
+    end
+    f_in.close
+    f_out.close
+  end
+  def remove_comments(s) # cher oriented, remove comments placed in multiple lines
+    s_in = s
+    s_out = ''
+    char_counter = 0
+    len = s_in.length
+    while char_counter < len
+      if (s_in[char_counter] == '/') && (char_counter < len - 1) && (s_in[char_counter + 1] == '*')
+        char_counter += 2
+        end_of_comment = false
+        while (char_counter < len) && !end_of_comment
+          if (s_in[char_counter] == '*') && (char_counter < len - 1) && (s_in[char_counter + 1] == '/')
+            char_counter += 2
+            end_of_comment = true
+          else
+            char_counter += 1
+          end
+        end
+      else
+        s_out = s_out + s_in[char_counter]
+        char_counter += 1
+      end
+    end
+    return s_out
+  end
+  def remove_empty_lines(s) # char oriented
+    s_in = s
+    s_out = ''
+    char_counter = 0
+    len = s_in.length
+    new_line = true
+    while char_counter < len
+      while (char_counter < len) && new_line
+        while (char_counter < len) && ((s_in[char_counter].ord == 10) || (s_in[char_counter].ord == 13))
+          char_counter += 1
+        end
+        old_char_counter = char_counter
+        while (char_counter < len) && ([32, 7].include?s_in[char_counter].ord)
+          char_counter += 1
+        end
+        if (char_counter < len) &&
+            (s_in[char_counter].ord != 10) &&
+            (s_in[char_counter].ord != 13)
+          char_counter = old_char_counter
+          new_line = false
+        end
+      end
+      if char_counter < len
+        s_out = s_out + s_in[char_counter]
+        new_line = (s_in[char_counter].ord == 10) || (s_in[char_counter].ord == 13)
+        if (s_in[char_counter].ord == 13)
+          s_out = s_out + 10.chr
+        end
+        char_counter += 1
+      end
+    end
+    return s_out
+  end
+  def print_compressed_file
+    f_in = File.new(@to_file, "r")
+    puts remove_empty_lines(remove_comments(f_in.read))
+    f_in.close
+  end
+  def compress_css
+    f_in = File.new(@from_file, "r")
+    f_out = File.new(@to_file, "w")
+    f_out.write(remove_empty_lines(remove_comments(f_in.read)))
+    f_in.close
+    f_out.close
+  end
+end
+
+css_compressor = Css_compressor.new('input.txt', 'output.txt')
+css_compressor.remove_line_comments_and_empty_lines
+css_compressor.print_compressed_file
+css_compressor.compress_css
+css_compressor.print_compressed_file
+
